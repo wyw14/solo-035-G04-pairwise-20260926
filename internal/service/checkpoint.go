@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/wyw14/solo-035/internal/backup"
+	"github.com/wyw14/solo-035/internal/caption"
 	"github.com/wyw14/solo-035/internal/event"
 	"github.com/wyw14/solo-035/internal/journal"
 	"github.com/wyw14/solo-035/internal/model"
@@ -12,11 +13,12 @@ import (
 )
 
 type ControlCheckpoint struct {
-	Events  []event.RecoveryRecord   `json:"events"`
-	Sync    []syncer.Recovery        `json:"sync"`
-	Backup  []backup.RecoveryRecord  `json:"backup"`
-	Quality []quality.RecoveryRecord `json:"quality"`
-	Journal []journal.Record         `json:"journal"`
+	Events   []event.RecoveryRecord   `json:"events"`
+	Sync     []syncer.Recovery        `json:"sync"`
+	Backup   []backup.RecoveryRecord  `json:"backup"`
+	Quality  []quality.RecoveryRecord `json:"quality"`
+	Journal  []journal.Record         `json:"journal"`
+	Captions caption.Recovery         `json:"captions"`
 }
 
 func (runtime *Runtime) ExportCheckpoint() ControlCheckpoint {
@@ -26,11 +28,12 @@ func (runtime *Runtime) ExportCheckpoint() ControlCheckpoint {
 		ids = append(ids, record.Event.ID)
 	}
 	return ControlCheckpoint{
-		Events:  events,
-		Sync:    runtime.SyncState.ExportRecovery(),
-		Backup:  runtime.BackupState.ExportRecovery(),
-		Quality: runtime.Evidence.Export(ids),
-		Journal: runtime.Journal.Records(),
+		Events:   events,
+		Sync:     runtime.SyncState.ExportRecovery(),
+		Backup:   runtime.BackupState.ExportRecovery(),
+		Quality:  runtime.Evidence.Export(ids),
+		Journal:  runtime.Journal.Records(),
+		Captions: runtime.CaptionLibrary.Export(),
 	}
 }
 
@@ -46,6 +49,9 @@ func (runtime *Runtime) RestoreCheckpoint(checkpoint ControlCheckpoint) (Recover
 	}
 	if err := runtime.Evidence.Restore(checkpoint.Quality); err != nil {
 		return RecoveryReport{}, fmt.Errorf("restore quality evidence: %w", err)
+	}
+	if err := runtime.CaptionLibrary.Restore(checkpoint.Captions); err != nil {
+		return RecoveryReport{}, fmt.Errorf("restore caption library: %w", err)
 	}
 	sources := make(map[model.EventID]model.SourceID)
 	for _, item := range checkpoint.Sync {

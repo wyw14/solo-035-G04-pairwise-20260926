@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/wyw14/solo-035/internal/backup"
+	"github.com/wyw14/solo-035/internal/caption"
 	"github.com/wyw14/solo-035/internal/model"
 )
 
@@ -19,6 +20,12 @@ type ControlRequest struct {
 	Count       int64  `json:"count"`
 	Message     string `json:"message"`
 	DelayMillis int64  `json:"delay_millis"`
+	Language    string `json:"language"`
+	Version     uint64 `json:"version"`
+	Sequence    int64  `json:"sequence"`
+	Start       int64  `json:"start"`
+	End         int64  `json:"end"`
+	Text        string `json:"text"`
 }
 
 type ControlResult struct {
@@ -98,6 +105,32 @@ func (runtime *Runtime) ExecuteControl(ctx context.Context, request ControlReque
 	case "quality-reset":
 		runtime.Quality.Reset(eventID)
 		result.Value = eventID
+		return result, nil
+	case "ingest-caption-cue":
+		value, err := runtime.IngestCaptionCue(CaptionCueInput{
+			EventID:  request.EventID,
+			Language: request.Language,
+			Version:  request.Version,
+			Sequence: request.Sequence,
+			Start:    request.Start,
+			End:      request.End,
+			Text:     request.Text,
+		})
+		result.Value = value
+		return result, err
+	case "review-caption-track":
+		value, err := runtime.ReviewCaptionTrack(request.EventID, request.Language)
+		result.Value = value
+		return result, err
+	case "set-caption-reference":
+		event, ok := runtime.Events.Get(eventID)
+		if !ok {
+			return result, fmt.Errorf("event %s not found", eventID)
+		}
+		if err := runtime.CaptionLibrary.SetReference(event.ID, request.Language); err != nil {
+			return result, err
+		}
+		result.Value = map[string]any{"event_id": event.ID, "reference": caption.NormalizeLanguage(request.Language)}
 		return result, nil
 	case "record-gap":
 		if err := runtime.Receiver.RecordGap(sourceID, request.Count); err != nil {

@@ -37,6 +37,7 @@ type Runtime struct {
 	Captions        *caption.State
 	CaptionFlow     *caption.Coordinator
 	Continuity      *caption.Continuity
+	CaptionLibrary  *caption.Library
 	Evidence        *quality.EvidenceSet
 	Quality         *quality.Coordinator
 	Evaluator       *quality.Evaluator
@@ -85,6 +86,7 @@ func NewRuntime(dataDirectory string, clock func() time.Time) (*Runtime, error) 
 	runtime.Captions = caption.NewState()
 	runtime.CaptionFlow = caption.NewCoordinator(runtime.Captions, clock)
 	runtime.Continuity = caption.NewContinuity()
+	runtime.CaptionLibrary = caption.NewLibrary(clock)
 	runtime.Evidence = quality.NewEvidenceSet()
 	runtime.Quality = quality.NewCoordinator(runtime.Evidence, clock)
 	runtime.Evaluator = evaluator

@@ -1,9 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
+	"github.com/wyw14/solo-035/internal/caption"
 	"github.com/wyw14/solo-035/internal/model"
 )
 
@@ -26,6 +29,12 @@ func (runtime *Runtime) Snapshot() model.RuntimeSnapshot {
 		if captionStatus.EncoderErr != "" {
 			snapshot.Incidents = append(snapshot.Incidents, model.IncidentView{ID: uuid.NewString(), EventID: event.ID, Severity: "error", Message: captionStatus.EncoderErr, CreatedAt: captionStatus.UpdatedAt})
 		}
+		captionReport := runtime.CaptionLibrary.Report(event.ID, event.Revision, runtime.eventTimecode(event.ID))
+		captionDetail := ""
+		if !captionReport.Clean() {
+			captionDetail = formatCaptionReport(captionReport)
+		}
+		snapshot.Interlocks = append(snapshot.Interlocks, model.InterlockView{EventID: event.ID, Name: "caption-tracks", Passed: captionReport.Clean(), Detail: captionDetail})
 	}
 	for _, resource := range runtime.EncoderFlow.Equipment() {
 		snapshot.Equipment = append(snapshot.Equipment, model.EquipmentView{ID: resource.ID, Kind: "encoder", Owner: resource.Lease.Owner, Fence: resource.Lease.Fence, Healthy: resource.Healthy})
@@ -58,4 +67,15 @@ func (runtime *Runtime) Interlocks() []model.InterlockView {
 
 func (runtime *Runtime) Incidents() []model.IncidentView {
 	return runtime.Snapshot().Incidents
+}
+
+func formatCaptionReport(report caption.Report) string {
+	parts := make([]string, 0, 2)
+	if issues := report.IssueCount(); issues > 0 {
+		parts = append(parts, fmt.Sprintf("%d alignment issues", issues))
+	}
+	if len(report.ReviewPending) > 0 {
+		parts = append(parts, fmt.Sprintf("tracks pending review: %s", strings.Join(report.ReviewPending, ", ")))
+	}
+	return strings.Join(parts, "; ")
 }
