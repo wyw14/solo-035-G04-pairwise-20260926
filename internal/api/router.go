@@ -32,6 +32,13 @@ func (server *Server) Router() http.Handler {
 		api.Post("/control", server.control)
 		api.Get("/checkpoint", server.exportCheckpoint)
 		api.Post("/checkpoint", server.restoreCheckpoint)
+		api.Get("/subtitle-tracks", server.subtitleTracks)
+		api.Post("/subtitle-tracks", server.registerSubtitleTrack)
+		api.Post("/subtitle-cues", server.submitSubtitleCue)
+		api.Post("/subtitle-review", server.reviewSubtitleCue)
+		api.Get("/subtitle-audit", server.subtitleAudit)
+		api.Get("/subtitle-rereview", server.subtitleRereview)
+		api.Get("/subtitles", server.subtitles)
 	})
 	router.Get("/", func(writer http.ResponseWriter, request *http.Request) {
 		http.Redirect(writer, request, "/operations.html", http.StatusTemporaryRedirect)

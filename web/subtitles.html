@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OnAirMux 国际字幕</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+.panel{background:#fff;border:1px solid #d5ddda;border-radius:4px;padding:18px;margin-bottom:18px}
+.panel h2{font-size:16px;margin:0 0 14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{font-size:12px;color:#52605a;display:flex;flex-direction:column;gap:4px}
+input,select{font:inherit;padding:8px 10px;border:1px solid #c2ccc8;border-radius:3px;min-width:150px}
+button{font:inherit;padding:9px 16px;background:#16835f;color:#fff;border:0;border-radius:3px;cursor:pointer}
+button.secondary{background:#43514b}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #e3e9e6}
+th{color:#52605a;font-weight:600}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.tag.ok{background:#e0f2ea;color:#14664b}.tag.bad{background:#fbe7e2;color:#a53722}.tag.warn{background:#fdf3dd;color:#8a6114}
+#playback-result{font-size:22px;font-weight:700;min-height:34px;color:#17201d}
+.muted{color:#798681;font-size:12px}
+form .wide input{min-width:320px}
+</style>
+</head>
+<body>
+<header><strong>OnAirMux</strong><nav><a href="/operations.html">节目</a><a href="/equipment.html">设备</a><a href="/interlocks.html">联锁</a><a href="/incidents.html">事件</a><a href="/subtitles.html">字幕</a></nav></header>
+<main>
+<section><p class="eyebrow">INTERNATIONAL SIGNAL</p><h1>多语种字幕轨道</h1><p id="stamp">正在连接播控服务</p></section>
+
+<div class="panel">
+<h2>播出查询 · 有效字幕</h2>
+<div class="row">
+<label>事件<select id="play-event"></select></label>
+<label>语种<input id="play-language" value="en" list="language-list"></label>
+<label>时码 (ms)<input id="play-timecode" type="number" value="1000" min="0"></label>
+<button id="play-query">查询当前字幕</button>
+</div>
+<p id="playback-result" class="empty" style="margin-top:14px">尚未查询</p>
+</div>
+
+<div class="panel">
+<h2>语种轨道与审核状态</h2>
+<div class="row" style="margin-bottom:12px">
+<label>事件<select id="track-event"></select></label>
+<button id="audit-run" class="secondary">按直播事件检查缺译 / 重叠 / 过期</button>
+</div>
+<div id="tracks"><p class="muted">加载中…</p></div>
+<div id="audit" style="margin-top:16px"></div>
+</div>
+
+<div class="panel">
+<h2>节目修订后待重审轨道</h2>
+<div id="rereview"><p class="muted">加载中…</p></div>
+</div>
+
+<div class="panel">
+<h2>接收人工翻译</h2>
+<form id="cue-form" class="row">
+<label>事件<select id="cue-event"></select></label>
+<label>语种<input id="cue-language" value="en" list="language-list" required></label>
+<label>起时码 (ms)<input id="cue-start" type="number" min="0" required></label>
+<label>止时码 (ms)<input id="cue-end" type="number" min="0" required></label>
+<label class="wide">译文<input id="cue-text" required></label>
+<button type="submit">提交字幕</button>
+</form>
+<datalist id="language-list"><option value="zh-CN"><option value="en"><option value="ja"><option value="ko"><option value="fr"><option value="es"></datalist>
+<p class="muted">版本缺省取事件当前节目版本；提交后需人工审核，审核通过的当前版本字幕才可播出。</p>
+</div>
+</main>
+<script src="/subtitle.js"></script>
+</body>
+</html>

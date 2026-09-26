@@ -1,10 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/google/uuid"
 	"github.com/wyw14/solo-035/internal/model"
+	"github.com/wyw14/solo-035/internal/subtitle"
 )
 
 func (runtime *Runtime) Snapshot() model.RuntimeSnapshot {
@@ -25,6 +27,21 @@ func (runtime *Runtime) Snapshot() model.RuntimeSnapshot {
 		snapshot.Interlocks = append(snapshot.Interlocks, model.InterlockView{EventID: event.ID, Name: "caption-continuity", Passed: captionPassed, Detail: captionStatus.EncoderErr})
 		if captionStatus.EncoderErr != "" {
 			snapshot.Incidents = append(snapshot.Incidents, model.IncidentView{ID: uuid.NewString(), EventID: event.ID, Severity: "error", Message: captionStatus.EncoderErr, CreatedAt: captionStatus.UpdatedAt})
+		}
+		if report, err := runtime.SubtitleAudit(event.ID, ""); err == nil && len(report.Languages) > 0 {
+			counts := report.Counts()
+			detail := fmt.Sprintf("%d languages aligned", len(report.Languages))
+			if !report.Healthy() {
+				detail = fmt.Sprintf("missing=%d overlap=%d stale=%d unreviewed=%d",
+					counts[subtitle.IssueMissing], counts[subtitle.IssueOverlap], counts[subtitle.IssueStale], counts[subtitle.IssueUnreviewed])
+			}
+			snapshot.Interlocks = append(snapshot.Interlocks, model.InterlockView{EventID: event.ID, Name: "subtitle-tracks", Passed: report.Healthy(), Detail: detail})
+			for _, issue := range report.Issues {
+				if issue.Kind != subtitle.IssueStale && issue.Kind != subtitle.IssueMissing {
+					continue
+				}
+				snapshot.Incidents = append(snapshot.Incidents, model.IncidentView{ID: uuid.NewString(), EventID: event.ID, Severity: "warning", Message: issue.Detail, CreatedAt: report.CheckedAt})
+			}
 		}
 	}
 	for _, resource := range runtime.EncoderFlow.Equipment() {

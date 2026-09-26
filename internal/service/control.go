@@ -14,6 +14,12 @@ type ControlRequest struct {
 	EventID     string `json:"event_id"`
 	SourceID    string `json:"source_id"`
 	EncoderID   string `json:"encoder_id"`
+	Language    string `json:"language"`
+	CueID       string `json:"cue_id"`
+	Text        string `json:"text"`
+	Revision    string `json:"revision"`
+	StartMS     int64  `json:"start_ms"`
+	EndMS       int64  `json:"end_ms"`
 	Healthy     bool   `json:"healthy"`
 	Bitrate     int    `json:"bitrate"`
 	Count       int64  `json:"count"`
@@ -43,8 +49,12 @@ func (runtime *Runtime) ExecuteControl(ctx context.Context, request ControlReque
 		return result, err
 	case "advance-program":
 		value, err := runtime.Events.AdvanceProgram(eventID, runtime.Clock())
-		result.Value = value
-		return result, err
+		if err != nil {
+			return result, err
+		}
+		rereview := runtime.SubtitleFlow.ProgramRevised(eventID, value.Revision)
+		result.Value = map[string]any{"program": value, "subtitle_rereview": rereview}
+		return result, nil
 	case "advance-source":
 		value, err := runtime.Events.AdvanceSource(eventID, runtime.Clock())
 		result.Value = value
@@ -140,6 +150,25 @@ func (runtime *Runtime) ExecuteControl(ctx context.Context, request ControlReque
 			return model.NewSourceID()
 		})
 		result.Value = report
+		return result, err
+	case "register-subtitle-language":
+		value, err := runtime.RegisterSubtitleLanguage(eventID, request.Language)
+		result.Value = value
+		return result, err
+	case "submit-subtitle-cue":
+		value, err := runtime.SubmitSubtitleCue(eventID, request.Language, request.CueID, request.Text, request.StartMS, request.EndMS, model.RevisionID(request.Revision))
+		result.Value = value
+		return result, err
+	case "review-subtitle-cue":
+		value, err := runtime.ReviewSubtitleCue(eventID, request.Language, request.CueID)
+		result.Value = value
+		return result, err
+	case "subtitle-rereview-queue":
+		result.Value = runtime.SubtitleReReviewQueue()
+		return result, nil
+	case "subtitle-audit":
+		value, err := runtime.SubtitleAudit(eventID, request.Language)
+		result.Value = value
 		return result, err
 	default:
 		return result, fmt.Errorf("unsupported control action %q", request.Action)

@@ -6,6 +6,7 @@ import (
 	"github.com/wyw14/solo-035/internal/caption"
 	"github.com/wyw14/solo-035/internal/model"
 	"github.com/wyw14/solo-035/internal/mux"
+	"github.com/wyw14/solo-035/internal/subtitle"
 )
 
 type SourceDetail struct {
@@ -24,18 +25,21 @@ type EventDetail struct {
 }
 
 type OperationalDetail struct {
-	Programs []mux.Program         `json:"programs"`
-	Sources  []SourceDetail        `json:"sources"`
-	Events   []EventDetail         `json:"events"`
-	Captions []model.CaptionStatus `json:"captions"`
-	Audio    []audio.PathState     `json:"audio_paths"`
+	Programs       []mux.Program           `json:"programs"`
+	Sources        []SourceDetail          `json:"sources"`
+	Events         []EventDetail           `json:"events"`
+	Captions       []model.CaptionStatus   `json:"captions"`
+	Audio          []audio.PathState       `json:"audio_paths"`
+	SubtitleTracks []subtitle.Track        `json:"subtitle_tracks"`
+	SubtitleReview []subtitle.ReReviewItem `json:"subtitle_rereview"`
 }
 
 func (runtime *Runtime) Detail() OperationalDetail {
 	detail := OperationalDetail{
-		Programs: runtime.Mux.Programs(),
-		Captions: runtime.CaptionFlow.Snapshot(),
-		Audio:    runtime.AudioState.List(),
+		Programs:       runtime.Mux.Programs(),
+		Captions:       runtime.CaptionFlow.Snapshot(),
+		Audio:          runtime.AudioState.List(),
+		SubtitleReview: runtime.SubtitleReReviewQueue(),
 	}
 	for _, signal := range runtime.SourceFlow.Snapshot() {
 		detail.Sources = append(detail.Sources, SourceDetail{
@@ -56,6 +60,7 @@ func (runtime *Runtime) Detail() OperationalDetail {
 			eventDetail.Failover = &failover
 		}
 		detail.Events = append(detail.Events, eventDetail)
+		detail.SubtitleTracks = append(detail.SubtitleTracks, runtime.SubtitleFlow.Tracks(item.ID)...)
 	}
 	return detail
 }

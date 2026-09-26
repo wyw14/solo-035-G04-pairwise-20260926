@@ -49,5 +49,27 @@ func Bootstrap(runtime *Runtime) error {
 	if err := coordinator.CommitOnAir(event.ID, output.Fence); err != nil {
 		return err
 	}
+	// International signal: the original-language track defines the
+	// reference timeline and the English track is translated against it.
+	languages := []string{"zh-CN", "en"}
+	texts := map[string][]string{
+		"zh-CN": {"晚上好", "欢迎收看新闻", "稍后回来"},
+		"en":    {"Good evening", "Welcome to the news", "We will be right back"},
+	}
+	for _, language := range languages {
+		if _, err := runtime.RegisterSubtitleLanguage(event.ID, language); err != nil {
+			return err
+		}
+		for index, text := range texts[language] {
+			start := int64(index * 3000)
+			cue, err := runtime.SubmitSubtitleCue(event.ID, language, "", text, start, start+3000, event.Revision)
+			if err != nil {
+				return err
+			}
+			if _, err := runtime.ReviewSubtitleCue(event.ID, language, cue.ID); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

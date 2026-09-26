@@ -15,6 +15,7 @@ import (
 	"github.com/wyw14/solo-035/internal/playout"
 	"github.com/wyw14/solo-035/internal/quality"
 	"github.com/wyw14/solo-035/internal/source"
+	"github.com/wyw14/solo-035/internal/subtitle"
 	"github.com/wyw14/solo-035/internal/syncer"
 )
 
@@ -37,6 +38,8 @@ type Runtime struct {
 	Captions        *caption.State
 	CaptionFlow     *caption.Coordinator
 	Continuity      *caption.Continuity
+	Subtitles       *subtitle.State
+	SubtitleFlow    *subtitle.Coordinator
 	Evidence        *quality.EvidenceSet
 	Quality         *quality.Coordinator
 	Evaluator       *quality.Evaluator
@@ -85,6 +88,8 @@ func NewRuntime(dataDirectory string, clock func() time.Time) (*Runtime, error) 
 	runtime.Captions = caption.NewState()
 	runtime.CaptionFlow = caption.NewCoordinator(runtime.Captions, clock)
 	runtime.Continuity = caption.NewContinuity()
+	runtime.Subtitles = subtitle.NewState()
+	runtime.SubtitleFlow = subtitle.NewCoordinator(runtime.Subtitles, clock)
 	runtime.Evidence = quality.NewEvidenceSet()
 	runtime.Quality = quality.NewCoordinator(runtime.Evidence, clock)
 	runtime.Evaluator = evaluator
